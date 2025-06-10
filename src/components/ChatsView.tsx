@@ -1,24 +1,35 @@
-import React from 'react'
+import { useEffect, useState } from 'react'
 import { MessageSquare, Plus, Search, Clock, X } from 'lucide-react'
-import { useChatStore } from '../state'
-import { formatDistanceToNow } from '@/shared/utils/dateUtils'
+import useChatsData from '../hooks/useChatsData.ts'
+import useChatSaver from '../hooks/useChatSaver.ts'
+import type { Chat } from '../types/chat.ts'
+import { formatDistanceToNow } from '../utils/date.ts'
 
-const ChatsView: React.FC = () => {
-  const {
-    createNewChat,
-    selectChat,
-    getFilteredChats,
-    currentChatId,
-    setSearchQuery,
-    searchQuery
-  } = useChatStore()
+const ChatsView = () => {
+  const { chats, loading } = useChatsData()
+  const save = useChatSaver()
+  const [chatList, setChatList] = useState<Chat[]>([])
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    if (chats) setChatList(chats)
+  }, [chats])
 
   const handleNewChat = () => {
-    createNewChat()
+    const newChat: Chat = {
+      id: `chat-${Date.now()}`,
+      title: `New Chat ${chatList.length + 1}`,
+      timestamp: new Date().toISOString()
+    }
+    const updated = [newChat, ...chatList]
+    setChatList(updated)
+    setCurrentChatId(newChat.id)
+    save(updated)
   }
 
   const handleSelectChat = (chatId: string) => {
-    selectChat(chatId)
+    setCurrentChatId(chatId)
   }
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,16 +40,24 @@ const ChatsView: React.FC = () => {
     setSearchQuery('')
   }
 
-  const chats = getFilteredChats()
+  const filtered = chatList.filter((chat) => {
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    return (
+      chat.title.toLowerCase().includes(q) ||
+      (chat.lastMessage && chat.lastMessage.toLowerCase().includes(q))
+    )
+  })
+
+  if (loading) return <p>Loading...</p>
 
   return (
-    <div className="animate-fadeIn h-full flex flex-col">
+    <div className="h-full flex flex-col p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold flex items-center">
           <MessageSquare className="mr-2" size={24} />
           Recent Chats
         </h1>
-
         <button
           onClick={handleNewChat}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center transition-colors"
@@ -47,7 +66,6 @@ const ChatsView: React.FC = () => {
           New Chat
         </button>
       </div>
-
       <div className="relative mb-4">
         <Search
           size={16}
@@ -69,18 +87,13 @@ const ChatsView: React.FC = () => {
           </button>
         )}
       </div>
-
       <div className="overflow-y-auto flex-1">
         <div className="grid grid-cols-1 gap-3">
-          {chats.length > 0 ? (
-            chats.map((chat) => (
+          {filtered.length > 0 ? (
+            filtered.map((chat) => (
               <div
                 key={chat.id}
-                className={`bg-white border ${
-                  currentChatId === chat.id
-                    ? 'border-blue-500 ring-2 ring-blue-100'
-                    : 'border-gray-200'
-                } rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer`}
+                className={`bg-white border ${currentChatId === chat.id ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'} rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer`}
                 onClick={() => handleSelectChat(chat.id)}
               >
                 <div className="flex justify-between items-start mb-2">
