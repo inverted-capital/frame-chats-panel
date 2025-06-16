@@ -19,10 +19,10 @@
   "dependencies": {
     "@artifact/client": "npm:@jsr/artifact__client@^0.0.121",
     "fast-deep-equal": "^3.1.3",
-    "lucide-react": "^0.515.0",
+    "lucide-react": "^0.516.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "zod": "^3.25.64",
+    "zod": "^3.25.67",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
@@ -39,7 +39,7 @@
     "prettier": "^3.5.3",
     "tailwindcss": "^4.1.10",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.34.0",
+    "typescript-eslint": "^8.34.1",
     "vite": "^6.3.5",
     "vite-plugin-mkcert": "^1.17.8"
   },
