@@ -52,7 +52,7 @@ const ChatsView = () => {
   if (loading) return <p>Loading...</p>
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold flex items-center">
           <MessageSquare className="mr-2" size={24} />
