@@ -1,5 +1,5 @@
 import { useArtifact } from '@artifact/client/hooks'
-import type { Chats } from '../types/chat.ts'
+import type { Chats } from './chat.ts'
 
 const useChatSaver = () => {
   const artifact = useArtifact()

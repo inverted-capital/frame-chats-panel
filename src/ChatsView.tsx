@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { MessageSquare, Plus, Search, Clock, X } from 'lucide-react'
-import useChatsData from '../hooks/useChatsData.ts'
-import useChatSaver from '../hooks/useChatSaver.ts'
-import type { Chat } from '../types/chat.ts'
-import { formatDistanceToNow } from '../utils/date.ts'
+import useChatsData from './useChatsData.ts'
+import useChatSaver from './useChatSaver.ts'
+import type { Chat } from './chat.ts'
+import { formatDistanceToNow } from './date.ts'
 
 const ChatsView = () => {
   const { chats, loading } = useChatsData()

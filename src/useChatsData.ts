@@ -1,5 +1,5 @@
 import { useExists, useJson } from '@artifact/client/hooks'
-import { chatsSchema, type Chats } from '../types/chat.ts'
+import { chatsSchema, type Chats } from './chat.ts'
 import { useEffect, useState } from 'react'
 
 const useChatsData = () => {
