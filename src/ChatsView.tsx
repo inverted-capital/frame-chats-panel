@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { MessageSquare, Plus, Search, Clock, X } from 'lucide-react'
 import useChatsData from './useChatsData.ts'
 import useChatSaver from './useChatSaver.ts'
@@ -7,40 +7,28 @@ import { formatDistanceToNow } from './date.ts'
 
 const ChatsView = () => {
   const { chats, loading } = useChatsData()
-  const save = useChatSaver()
-  const [chatList, setChatList] = useState<Chat[]>([])
+  const { newChat, deleteChat } = useChatSaver()
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
-  useEffect(() => {
-    if (chats) setChatList(chats)
-  }, [chats])
-
-  const handleNewChat = () => {
-    const newChat: Chat = {
-      id: `chat-${Date.now()}`,
-      title: `New Chat ${chatList.length + 1}`,
-      timestamp: new Date().toISOString()
-    }
-    const updated = [newChat, ...chatList]
-    setChatList(updated)
-    setCurrentChatId(newChat.id)
-    save(updated)
-  }
-
-  const handleSelectChat = (chatId: string) => {
+  const handleNewChat = useCallback(async () => {
+    const { chatId } = await newChat()
     setCurrentChatId(chatId)
-  }
+  }, [newChat])
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectChat = useCallback(async (chatId: string) => {
+    setCurrentChatId(chatId)
+  }, [])
+
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
-  }
+  }, [])
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery('')
-  }
+  }, [])
 
-  const filtered = chatList.filter((chat) => {
+  const filtered = chats.filter((chat) => {
     if (!searchQuery.trim()) return true
     const q = searchQuery.toLowerCase()
     return (

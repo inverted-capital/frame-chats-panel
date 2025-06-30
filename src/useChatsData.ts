@@ -1,23 +1,23 @@
-import { useExists, useJson } from "@artifact/client/hooks";
-import { type Chats, chatsSchema } from "./chat.ts";
-import { useEffect, useState } from "react";
-import schema from "@dreamcatcher/chats/schema";
+import { useDir, useFile, useJson } from "@artifact/client/hooks";
 
-const useChatsData = () => {
-  const exists = useExists("chats.json");
-  const raw = useJson("chats.json");
-  const [chats, setChats] = useState<Chats>([]);
+export const useChatsData = () => {
+  const dir = useDir('chats/')
 
-  useEffect(() => {
-    if (raw !== undefined) {
-      setChats(chatsSchema.parse(raw));
-    }
-  }, [raw]);
+  if (!dir) return { chats: [], loading: true }
+  const chats = dir
+  .filter((file) => file.type === 'tree')
+  .map((file) => file.path)
 
-  const loading = exists === null || (exists && raw === undefined);
-  const error = exists === false ? "chats.json not found" : null;
-
-  return { chats, loading, error };
+  return { chats, loading: false }
 };
 
-export default useChatsData;
+export const useChat = (chatId: string) => {
+  const dir = useDir('chats/' + chatId)
+  // get out the config file
+  return dir
+}
+
+export const useMessage = (chatId: string, messageId: string) => {
+  const json = useJson('chats/' + chatId + '/' + messageId)
+  return json
+}
