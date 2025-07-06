@@ -10,7 +10,7 @@ import {
   Play
 } from 'lucide-react'
 import { useFrame } from '@artifact/client/hooks'
-import type { Scope } from '@artifact/client/api'
+import type { FileScope } from '@artifact/client/api'
 import { useChats } from './useChatsData.ts'
 import useChatSaver from './useChatSaver.ts'
 import { formatDistanceToNow } from './date.ts'
@@ -41,7 +41,7 @@ const ChatsView = () => {
         throw new Error('Cannot navigate to chat from non-branch scope')
       }
       setCurrentChatId(chatId)
-      const scope: Scope = { ...target, path: `chats/${chatId}` }
+      const scope: FileScope = { ...target, path: `chats/${chatId}` }
       onSelection?.(scope)
     },
     [onSelection, target]
@@ -66,7 +66,7 @@ const ChatsView = () => {
       }
       e.stopPropagation()
       setCurrentChatId(chatId)
-      const scope: Scope = { ...target, path: `chats/${chatId}` }
+      const scope: FileScope = { ...target, path: `chats/${chatId}` }
       onNavigateTo?.(scope)
     },
     [onNavigateTo, target]
