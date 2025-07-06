@@ -1,23 +1,50 @@
 import { useCallback, useState } from 'react'
-import { MessageSquare, Plus, Search, Clock, X } from 'lucide-react'
+import {
+  MessageSquare,
+  Plus,
+  Search,
+  Clock,
+  X,
+  Trash,
+  Loader2
+} from 'lucide-react'
 import { useChats } from './useChatsData.ts'
 import useChatSaver from './useChatSaver.ts'
 import { formatDistanceToNow } from './date.ts'
 
 const ChatsView = () => {
   const { chats, loading } = useChats()
-  const { newChat } = useChatSaver()
+  const { newChat, deleteChat } = useChatSaver()
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [newChatLoading, setNewChatLoading] = useState(false)
+  const [deletingIds, setDeletingIds] = useState<string[]>([])
 
   const handleNewChat = useCallback(async () => {
-    const chatId = await newChat()
-    setCurrentChatId(chatId)
+    setNewChatLoading(true)
+    try {
+      const chatId = await newChat()
+      setCurrentChatId(chatId)
+    } finally {
+      setNewChatLoading(false)
+    }
   }, [newChat])
 
   const handleSelectChat = useCallback(async (chatId: string) => {
     setCurrentChatId(chatId)
   }, [])
+
+  const handleDeleteChat = useCallback(
+    async (chatId: string) => {
+      setDeletingIds((ids) => [...ids, chatId])
+      try {
+        await deleteChat(chatId)
+      } finally {
+        setDeletingIds((ids) => ids.filter((id) => id !== chatId))
+      }
+    },
+    [deleteChat]
+  )
 
   const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
@@ -47,9 +74,14 @@ const ChatsView = () => {
         </h1>
         <button
           onClick={handleNewChat}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center transition-colors"
+          disabled={newChatLoading}
+          className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white px-4 py-2 rounded-md flex items-center transition-colors"
         >
-          <Plus size={16} className="mr-2" />
+          {newChatLoading ? (
+            <Loader2 size={16} className="mr-2 animate-spin" />
+          ) : (
+            <Plus size={16} className="mr-2" />
+          )}
           New Chat
         </button>
       </div>
@@ -85,9 +117,25 @@ const ChatsView = () => {
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="font-medium">{chat.id}</div>
-                  <div className="text-xs text-gray-500 flex items-center">
-                    <Clock size={12} className="mr-1" />
-                    {formatDistanceToNow(new Date())}
+                  <div className="flex items-center space-x-2">
+                    <div className="text-xs text-gray-500 flex items-center">
+                      <Clock size={12} className="mr-1" />
+                      {formatDistanceToNow(new Date())}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteChat(chat.id)
+                      }}
+                      disabled={deletingIds.includes(chat.id)}
+                      className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                    >
+                      {deletingIds.includes(chat.id) ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Trash size={12} />
+                      )}
+                    </button>
                   </div>
                 </div>
                 {chat.messages.length > 0 && (
