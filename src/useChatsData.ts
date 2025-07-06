@@ -2,7 +2,6 @@ import { useDir, useJson, useStore } from '@artifact/client/hooks'
 import { useMemo } from 'react'
 import { configSchema } from '@dreamcatcher/chats/schema'
 
-
 export const useChats = () => {
   const dir = useDir('chats/') || []
 
@@ -26,7 +25,7 @@ export const useChats = () => {
       return {
         id: chatId,
         config,
-        messages,
+        messages
       }
     })
   }, [chatIds, store])
@@ -50,4 +49,5 @@ export const useMessage = (chatId: string, messageId: string) => {
   return json
 }
 
-const parseConfig = (b: Uint8Array) => configSchema.parse(JSON.parse(new TextDecoder().decode(b)))
+const parseConfig = (b: Uint8Array) =>
+  configSchema.parse(JSON.parse(new TextDecoder().decode(b)))
