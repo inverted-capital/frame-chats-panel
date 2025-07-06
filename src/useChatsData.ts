@@ -1,14 +1,37 @@
-import { useDir, useJson } from '@artifact/client/hooks'
+import { useDir, useJson, useStore } from '@artifact/client/hooks'
+import { useMemo } from 'react'
+import { configSchema } from '@dreamcatcher/chats/schema'
+
 
 export const useChats = () => {
-  const dir = useDir('chats/')
+  const dir = useDir('chats/') || []
 
-  if (!dir) return { chats: [], loading: true }
-  const chats = dir
+  const chatIds = dir
     .filter((file) => file.type === 'tree')
     .map((file) => file.path)
 
-  return { chats, loading: false }
+  const store = useStore()
+  const chats = useMemo(() => {
+    if (!store) return []
+    if (!chatIds.length) return []
+    const { readFile, readDir } = store.getState()
+    return chatIds.map((chatId) => {
+      const path = 'chats/' + chatId + '/'
+      const config = readFile(path + 'config.json', parseConfig)
+      const messagesDir = readDir(path + 'messages/') || []
+      const messages = messagesDir.map((file) => {
+        const message = readFile(path + 'messages/' + file.path, parseConfig)
+        return message
+      })
+      return {
+        id: chatId,
+        config,
+        messages,
+      }
+    })
+  }, [chatIds, store])
+
+  return { chatIds, chats, loading: false }
 }
 
 export const useChatInfo = (chatId: string) => {
@@ -26,3 +49,5 @@ export const useMessage = (chatId: string, messageId: string) => {
 
   return json
 }
+
+const parseConfig = (b: Uint8Array) => configSchema.parse(JSON.parse(new TextDecoder().decode(b)))

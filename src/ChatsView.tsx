@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { MessageSquare, Plus, Search, Clock, X } from 'lucide-react'
 import { useChats } from './useChatsData.ts'
 import useChatSaver from './useChatSaver.ts'
@@ -6,7 +6,7 @@ import { formatDistanceToNow } from './date.ts'
 
 const ChatsView = () => {
   const { chats, loading } = useChats()
-  const { newChat, deleteChat } = useChatSaver()
+  const { newChat } = useChatSaver()
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -30,10 +30,10 @@ const ChatsView = () => {
   const filtered = chats.filter((chat) => {
     if (!searchQuery.trim()) return true
     const q = searchQuery.toLowerCase()
-    // return (
-    // chat.title.toLowerCase().includes(q) ||
-    // (chat.lastMessage && chat.lastMessage.toLowerCase().includes(q))
-    // )
+    return chat.config?.model?.toLowerCase().includes(q)
+    // ||
+    // (chat.messages.length &&
+    //   chat.messages[chat.messages.length - 1].content.toLowerCase().includes(q))
   })
 
   if (loading) return <p>Loading...</p>
@@ -76,7 +76,7 @@ const ChatsView = () => {
       </div>
       <div className="overflow-y-auto flex-1">
         <div className="grid grid-cols-1 gap-3">
-          {/* {filtered.length > 0 ? (
+          {filtered.length > 0 ? (
             filtered.map((chat) => (
               <div
                 key={chat.id}
@@ -84,15 +84,15 @@ const ChatsView = () => {
                 onClick={() => handleSelectChat(chat.id)}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <div className="font-medium">{chat.title}</div>
+                  <div className="font-medium">{chat.id}</div>
                   <div className="text-xs text-gray-500 flex items-center">
                     <Clock size={12} className="mr-1" />
-                    {formatDistanceToNow(new Date(chat.timestamp))}
+                    {formatDistanceToNow(new Date())}
                   </div>
                 </div>
-                {chat.lastMessage && (
+                {chat.messages.length > 0 && (
                   <p className="text-sm text-gray-600 line-clamp-2">
-                    {chat.lastMessage}
+                    {JSON.stringify(chat.messages[chat.messages.length - 1])}
                   </p>
                 )}
               </div>
@@ -101,7 +101,7 @@ const ChatsView = () => {
             <div className="text-center py-8 text-gray-500">
               {searchQuery ? 'No chats match your search' : 'No chats yet'}
             </div>
-          )} */}
+          )}
         </div>
       </div>
     </div>
