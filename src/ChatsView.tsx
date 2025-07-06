@@ -6,8 +6,11 @@ import {
   Clock,
   X,
   Trash,
-  Loader2
+  Loader2,
+  Play
 } from 'lucide-react'
+import { useFrame } from '@artifact/client/hooks'
+import type { Scope } from '@artifact/client/api'
 import { useChats } from './useChatsData.ts'
 import useChatSaver from './useChatSaver.ts'
 import { formatDistanceToNow } from './date.ts'
@@ -19,6 +22,7 @@ const ChatsView = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [newChatLoading, setNewChatLoading] = useState(false)
   const [deletingIds, setDeletingIds] = useState<string[]>([])
+  const { target, onNavigateTo } = useFrame()
 
   const handleNewChat = useCallback(async () => {
     setNewChatLoading(true)
@@ -44,6 +48,16 @@ const ChatsView = () => {
       }
     },
     [deleteChat]
+  )
+
+  const handleResumeChat = useCallback(
+    (chatId: string, e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation()
+      setCurrentChatId(chatId)
+      const scope = { ...target, path: `chats/${chatId}` } as unknown as Scope
+      onNavigateTo?.(scope)
+    },
+    [onNavigateTo, target]
   )
 
   const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,6 +136,12 @@ const ChatsView = () => {
                       <Clock size={12} className="mr-1" />
                       {formatDistanceToNow(new Date())}
                     </div>
+                    <button
+                      onClick={(e) => handleResumeChat(chat.id, e)}
+                      className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md flex items-center"
+                    >
+                      <Play size={12} className="mr-1" /> Resume
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
