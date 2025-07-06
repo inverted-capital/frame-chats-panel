@@ -17,31 +17,31 @@
     "knip": "knip --production --fix --allow-remove-files --format --exports"
   },
   "dependencies": {
-    "@artifact/client": "npm:@jsr/artifact__client@^0.0.143",
-    "@dreamcatcher/chats": "npm:@jsr/dreamcatcher__chats@^0.0.2",
+    "@artifact/client": "npm:@jsr/artifact__client@^0.0.155",
+    "@dreamcatcher/chats": "npm:@jsr/dreamcatcher__chats@^0.0.6",
     "fast-deep-equal": "^3.1.3",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "zod": "^3.25.67",
+    "zod": "^3.25.74",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
-    "@eslint/js": "^9.30.0",
+    "@eslint/js": "^9.30.1",
     "@tailwindcss/vite": "^4.1.11",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
-    "eslint": "^9.30.0",
+    "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.2.0",
+    "globals": "^16.3.0",
     "knip": "^5.61.3",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.35.1",
-    "vite": "^7.0.0",
+    "vite": "^7.0.2",
     "vite-plugin-mkcert": "^1.17.8"
   },
   "prettier": {

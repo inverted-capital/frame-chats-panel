@@ -1,15 +1,32 @@
-import { useArtifact } from "@artifact/client/hooks";
-import type { Chats } from "./chat.ts";
-import schema from "@dreamcatcher/chats/schema";
+import { useArtifact } from '@artifact/client/hooks'
+import schema from '@dreamcatcher/chats'
+import { useCallback } from 'react'
 
 const useChatSaver = () => {
-  const artifact = useArtifact();
+  const artifact = useArtifact()
 
-  return async (chats: Chats): Promise<void> => {
-    if (!artifact) return;
-    artifact.files.write.json("chats.json", chats);
-    await artifact.branch.write.commit("Update chats");
-  };
-};
+  const newChat = useCallback(async (): Promise<string> => {
+    if (!artifact) {
+      throw new Error('No artifact found')
+    }
 
-export default useChatSaver;
+    const fns = artifact.fibers.actions.bind(schema)
+    const { chatId } = await fns.newChat({ config: { model: 'gpt-4o' } })
+    return chatId
+  }, [artifact])
+
+  const deleteChat = useCallback(
+    async (chatId: string): Promise<void> => {
+      if (!artifact) {
+        throw new Error('No artifact found')
+      }
+      const fns = artifact.fibers.actions.bind(schema)
+      await fns.deleteChat({ chatId })
+    },
+    [artifact]
+  )
+
+  return { newChat, deleteChat }
+}
+
+export default useChatSaver

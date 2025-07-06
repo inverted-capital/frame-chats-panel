@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { MessageSquare, Plus, Search, Clock, X } from 'lucide-react'
-import useChatsData from './useChatsData.ts'
+import { useChats } from './useChatsData.ts'
 import useChatSaver from './useChatSaver.ts'
-import type { Chat } from './chat.ts'
 import { formatDistanceToNow } from './date.ts'
 
 const ChatsView = () => {
-  const { chats, loading } = useChatsData()
+  const { chats, loading } = useChats()
   const { newChat, deleteChat } = useChatSaver()
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleNewChat = useCallback(async () => {
-    const { chatId } = await newChat()
+    const chatId = await newChat()
     setCurrentChatId(chatId)
   }, [newChat])
 
@@ -31,10 +30,10 @@ const ChatsView = () => {
   const filtered = chats.filter((chat) => {
     if (!searchQuery.trim()) return true
     const q = searchQuery.toLowerCase()
-    return (
-      chat.title.toLowerCase().includes(q) ||
-      (chat.lastMessage && chat.lastMessage.toLowerCase().includes(q))
-    )
+    // return (
+    // chat.title.toLowerCase().includes(q) ||
+    // (chat.lastMessage && chat.lastMessage.toLowerCase().includes(q))
+    // )
   })
 
   if (loading) return <p>Loading...</p>
@@ -77,7 +76,7 @@ const ChatsView = () => {
       </div>
       <div className="overflow-y-auto flex-1">
         <div className="grid grid-cols-1 gap-3">
-          {filtered.length > 0 ? (
+          {/* {filtered.length > 0 ? (
             filtered.map((chat) => (
               <div
                 key={chat.id}
@@ -102,7 +101,7 @@ const ChatsView = () => {
             <div className="text-center py-8 text-gray-500">
               {searchQuery ? 'No chats match your search' : 'No chats yet'}
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>
