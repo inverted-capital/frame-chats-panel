@@ -14,6 +14,7 @@ import type { Scope } from '@artifact/client/api'
 import { useChats } from './useChatsData.ts'
 import useChatSaver from './useChatSaver.ts'
 import { formatDistanceToNow } from './date.ts'
+import { isBranchScope } from '@artifact/client/api'
 
 const ChatsView = () => {
   const { chats, loading } = useChats()
@@ -22,7 +23,7 @@ const ChatsView = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [newChatLoading, setNewChatLoading] = useState(false)
   const [deletingIds, setDeletingIds] = useState<string[]>([])
-  const { target, onNavigateTo } = useFrame()
+  const { onNavigateTo, onSelection, target } = useFrame()
 
   const handleNewChat = useCallback(async () => {
     setNewChatLoading(true)
@@ -34,9 +35,17 @@ const ChatsView = () => {
     }
   }, [newChat])
 
-  const handleSelectChat = useCallback(async (chatId: string) => {
-    setCurrentChatId(chatId)
-  }, [])
+  const handleSelectChat = useCallback(
+    async (chatId: string) => {
+      if (!isBranchScope(target)) {
+        throw new Error('Cannot navigate to chat from non-branch scope')
+      }
+      setCurrentChatId(chatId)
+      const scope: Scope = { ...target, path: `chats/${chatId}` }
+      onSelection?.(scope)
+    },
+    [onSelection, target]
+  )
 
   const handleDeleteChat = useCallback(
     async (chatId: string) => {
@@ -52,9 +61,12 @@ const ChatsView = () => {
 
   const handleResumeChat = useCallback(
     (chatId: string, e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!isBranchScope(target)) {
+        throw new Error('Cannot navigate to chat from non-branch scope')
+      }
       e.stopPropagation()
       setCurrentChatId(chatId)
-      const scope = { ...target, path: `chats/${chatId}` } as unknown as Scope
+      const scope: Scope = { ...target, path: `chats/${chatId}` }
       onNavigateTo?.(scope)
     },
     [onNavigateTo, target]
