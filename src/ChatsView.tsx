@@ -35,6 +35,13 @@ const ChatsView = () => {
     return chats.filter((chat) => chat.config?.model?.toLowerCase().includes(q))
   }, [chats, searchQuery])
 
+  const allSelected = useMemo(
+    () =>
+      filtered.length > 0 &&
+      filtered.every((chat) => selectedIds.includes(chat.id)),
+    [filtered, selectedIds]
+  )
+
   useEffect(() => {
     if (!isFileScope(target)) return
     const prefix = 'chats/'
@@ -131,9 +138,14 @@ const ChatsView = () => {
   }, [])
 
   const handleSelectAll = useCallback(() => {
-    const ids = filtered.map((c) => c.id)
+    let ids: string[] = []
+    if (allSelected) {
+      ids = currentChatId ? [currentChatId] : []
+    } else {
+      ids = filtered.map((c) => c.id)
+      if (ids.length > 0) setCurrentChatId(ids[0])
+    }
     setSelectedIds(ids)
-    if (ids.length > 0) setCurrentChatId(ids[0])
     if (!isBranchScope(target)) return
     if (ids.length === 0) {
       onSelection?.()
@@ -144,7 +156,7 @@ const ChatsView = () => {
       }))
       onSelection?.(scopes[0], scopes.slice(1))
     }
-  }, [filtered, onSelection, target])
+  }, [allSelected, filtered, currentChatId, onSelection, target])
 
   if (loading) return <p>Loading...</p>
 
@@ -160,7 +172,7 @@ const ChatsView = () => {
             onClick={handleSelectAll}
             className="text-sm text-gray-500 hover:text-gray-700"
           >
-            Select All
+            {allSelected ? 'Deselect All' : 'Select All'}
           </button>
           <button
             onClick={handleNewChat}
@@ -200,50 +212,64 @@ const ChatsView = () => {
       <div className="overflow-y-auto flex-1">
         <div className="grid grid-cols-1 gap-3">
           {filtered.length > 0 ? (
-            filtered.map((chat, index) => (
-              <div
-                key={chat.id}
-                className={`bg-white border ${selectedIds.includes(chat.id) || currentChatId === chat.id ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'} ${selectedIds.includes(chat.id) ? 'bg-blue-50' : ''} rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer`}
-                onClick={(e) => handleSelectChat(chat.id, index, e)}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={(e) => handleResumeChat(chat.id, e)}
-                      className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md flex items-center"
-                    >
-                      <Play size={12} className="mr-1" /> Resume
-                    </button>
-                    <div className="font-medium">{chat.id}</div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="text-xs text-gray-500 flex items-center">
-                      <Clock size={12} className="mr-1" />
-                      {formatDistanceToNow(new Date())}
+            filtered.map((chat, index) => {
+              const isSelected = selectedIds.includes(chat.id)
+              const isActive = currentChatId === chat.id
+              const borderClass = isSelected
+                ? 'border-blue-500 ring-2 ring-blue-100'
+                : isActive
+                  ? 'border-yellow-500 ring-2 ring-yellow-100'
+                  : 'border-gray-200'
+              const bgClass = isSelected
+                ? 'bg-blue-50'
+                : isActive
+                  ? 'bg-yellow-50'
+                  : ''
+              return (
+                <div
+                  key={chat.id}
+                  className={`bg-white border ${borderClass} ${bgClass} rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer`}
+                  onClick={(e) => handleSelectChat(chat.id, index, e)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={(e) => handleResumeChat(chat.id, e)}
+                        className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md flex items-center"
+                      >
+                        <Play size={12} className="mr-1" /> Resume
+                      </button>
+                      <div className="font-medium">{chat.id}</div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteChat(chat.id)
-                      }}
-                      disabled={deletingIds.includes(chat.id)}
-                      className="text-red-500 hover:text-red-700 disabled:opacity-50"
-                    >
-                      {deletingIds.includes(chat.id) ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <Trash size={12} />
-                      )}
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <div className="text-xs text-gray-500 flex items-center">
+                        <Clock size={12} className="mr-1" />
+                        {formatDistanceToNow(new Date())}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteChat(chat.id)
+                        }}
+                        disabled={deletingIds.includes(chat.id)}
+                        className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                      >
+                        {deletingIds.includes(chat.id) ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Trash size={12} />
+                        )}
+                      </button>
+                    </div>
                   </div>
+                  {chat.messages.length > 0 && (
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {JSON.stringify(chat.messages[chat.messages.length - 1])}
+                    </p>
+                  )}
                 </div>
-                {chat.messages.length > 0 && (
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {JSON.stringify(chat.messages[chat.messages.length - 1])}
-                  </p>
-                )}
-              </div>
-            ))
+              )
+            })
           ) : (
             <div className="text-center py-8 text-gray-500">
               {searchQuery ? 'No chats match your search' : 'No chats yet'}
