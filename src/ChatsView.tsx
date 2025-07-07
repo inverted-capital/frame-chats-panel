@@ -79,10 +79,10 @@ const ChatsView = () => {
         setLastSelectedIndex(index)
       } else {
         next = [chatId]
-        setCurrentChatId(chatId)
         setLastSelectedIndex(index)
       }
 
+      setCurrentChatId(chatId)
       setSelectedIds(next)
 
       if (next.length === 0) {
@@ -133,6 +133,7 @@ const ChatsView = () => {
   const handleSelectAll = useCallback(() => {
     const ids = filtered.map((c) => c.id)
     setSelectedIds(ids)
+    if (ids.length > 0) setCurrentChatId(ids[0])
     if (!isBranchScope(target)) return
     if (ids.length === 0) {
       onSelection?.()
@@ -202,7 +203,7 @@ const ChatsView = () => {
             filtered.map((chat, index) => (
               <div
                 key={chat.id}
-                className={`bg-white border ${currentChatId === chat.id ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'} ${selectedIds.includes(chat.id) ? 'bg-blue-50' : ''} rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer`}
+                className={`bg-white border ${selectedIds.includes(chat.id) || currentChatId === chat.id ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'} ${selectedIds.includes(chat.id) ? 'bg-blue-50' : ''} rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer`}
                 onClick={(e) => handleSelectChat(chat.id, index, e)}
               >
                 <div className="flex justify-between items-start mb-2">
