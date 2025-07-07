@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useMemo } from 'react'
 import {
   MessageSquare,
   Plus,
@@ -23,7 +23,17 @@ const ChatsView = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [newChatLoading, setNewChatLoading] = useState(false)
   const [deletingIds, setDeletingIds] = useState<string[]>([])
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(
+    null
+  )
   const { onNavigateTo, onSelection, target } = useFrame()
+
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return chats
+    const q = searchQuery.toLowerCase()
+    return chats.filter((chat) => chat.config?.model?.toLowerCase().includes(q))
+  }, [chats, searchQuery])
 
   const handleNewChat = useCallback(async () => {
     setNewChatLoading(true)
@@ -36,15 +46,36 @@ const ChatsView = () => {
   }, [newChat])
 
   const handleSelectChat = useCallback(
-    async (chatId: string) => {
+    async (
+      chatId: string,
+      index: number,
+      e: React.MouseEvent<HTMLDivElement>
+    ) => {
       if (!isBranchScope(target)) {
         throw new Error('Cannot navigate to chat from non-branch scope')
       }
-      setCurrentChatId(chatId)
-      const scope: FileScope = { ...target, path: `chats/${chatId}` }
-      onSelection?.(scope)
+
+      if (e.shiftKey && lastSelectedIndex !== null) {
+        const start = Math.min(lastSelectedIndex, index)
+        const end = Math.max(lastSelectedIndex, index)
+        const ids = filtered.slice(start, end + 1).map((c) => c.id)
+        setSelectedIds((prev) => Array.from(new Set([...prev, ...ids])))
+      } else if (e.ctrlKey || e.metaKey) {
+        setSelectedIds((prev) =>
+          prev.includes(chatId)
+            ? prev.filter((id) => id !== chatId)
+            : [...prev, chatId]
+        )
+        setLastSelectedIndex(index)
+      } else {
+        setSelectedIds([chatId])
+        setCurrentChatId(chatId)
+        setLastSelectedIndex(index)
+        const scope: FileScope = { ...target, path: `chats/${chatId}` }
+        onSelection?.(scope)
+      }
     },
-    [onSelection, target]
+    [filtered, lastSelectedIndex, onSelection, target]
   )
 
   const handleDeleteChat = useCallback(
@@ -65,7 +96,6 @@ const ChatsView = () => {
         throw new Error('Cannot navigate to chat from non-branch scope')
       }
       e.stopPropagation()
-      setCurrentChatId(chatId)
       const scope: FileScope = { ...target, path: `chats/${chatId}` }
       onNavigateTo?.(scope)
     },
@@ -80,14 +110,9 @@ const ChatsView = () => {
     setSearchQuery('')
   }, [])
 
-  const filtered = chats.filter((chat) => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.toLowerCase()
-    return chat.config?.model?.toLowerCase().includes(q)
-    // ||
-    // (chat.messages.length &&
-    //   chat.messages[chat.messages.length - 1].content.toLowerCase().includes(q))
-  })
+  const handleSelectAll = useCallback(() => {
+    setSelectedIds(filtered.map((c) => c.id))
+  }, [filtered])
 
   if (loading) return <p>Loading...</p>
 
@@ -98,18 +123,26 @@ const ChatsView = () => {
           <MessageSquare className="mr-2" size={24} />
           Recent Chats
         </h1>
-        <button
-          onClick={handleNewChat}
-          disabled={newChatLoading}
-          className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white px-4 py-2 rounded-md flex items-center transition-colors"
-        >
-          {newChatLoading ? (
-            <Loader2 size={16} className="mr-2 animate-spin" />
-          ) : (
-            <Plus size={16} className="mr-2" />
-          )}
-          New Chat
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleSelectAll}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            Select All
+          </button>
+          <button
+            onClick={handleNewChat}
+            disabled={newChatLoading}
+            className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white px-4 py-2 rounded-md flex items-center transition-colors"
+          >
+            {newChatLoading ? (
+              <Loader2 size={16} className="mr-2 animate-spin" />
+            ) : (
+              <Plus size={16} className="mr-2" />
+            )}
+            New Chat
+          </button>
+        </div>
       </div>
       <div className="relative mb-4">
         <Search
@@ -135,25 +168,27 @@ const ChatsView = () => {
       <div className="overflow-y-auto flex-1">
         <div className="grid grid-cols-1 gap-3">
           {filtered.length > 0 ? (
-            filtered.map((chat) => (
+            filtered.map((chat, index) => (
               <div
                 key={chat.id}
-                className={`bg-white border ${currentChatId === chat.id ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'} rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer`}
-                onClick={() => handleSelectChat(chat.id)}
+                className={`bg-white border ${currentChatId === chat.id ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'} ${selectedIds.includes(chat.id) ? 'bg-blue-50' : ''} rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer`}
+                onClick={(e) => handleSelectChat(chat.id, index, e)}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <div className="font-medium">{chat.id}</div>
                   <div className="flex items-center space-x-2">
-                    <div className="text-xs text-gray-500 flex items-center">
-                      <Clock size={12} className="mr-1" />
-                      {formatDistanceToNow(new Date())}
-                    </div>
                     <button
                       onClick={(e) => handleResumeChat(chat.id, e)}
                       className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md flex items-center"
                     >
                       <Play size={12} className="mr-1" /> Resume
                     </button>
+                    <div className="font-medium">{chat.id}</div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="text-xs text-gray-500 flex items-center">
+                      <Clock size={12} className="mr-1" />
+                      {formatDistanceToNow(new Date())}
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
