@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'react'
+import { useCallback, useState, useMemo, useEffect } from 'react'
 import {
   MessageSquare,
   Plus,
@@ -14,7 +14,7 @@ import type { FileScope } from '@artifact/client/api'
 import { useChats } from './useChatsData.ts'
 import useChatSaver from './useChatSaver.ts'
 import { formatDistanceToNow } from './date.ts'
-import { isBranchScope } from '@artifact/client/api'
+import { isBranchScope, isFileScope } from '@artifact/client/api'
 
 const ChatsView = () => {
   const { chats, loading } = useChats()
@@ -35,47 +35,67 @@ const ChatsView = () => {
     return chats.filter((chat) => chat.config?.model?.toLowerCase().includes(q))
   }, [chats, searchQuery])
 
+  useEffect(() => {
+    if (!isFileScope(target)) return
+    const prefix = 'chats/'
+    if (!target.path.startsWith(prefix)) return
+    const id = target.path.slice(prefix.length)
+    if (chats.some((c) => c.id === id)) {
+      setCurrentChatId(id)
+    }
+  }, [target, chats])
+
   const handleNewChat = useCallback(async () => {
+    if (!isBranchScope(target)) {
+      throw new Error('Cannot create chat from non-branch scope')
+    }
     setNewChatLoading(true)
     try {
       const chatId = await newChat()
       setCurrentChatId(chatId)
+      const scope: FileScope = { ...target, path: `chats/${chatId}` }
+      onNavigateTo?.(scope)
     } finally {
       setNewChatLoading(false)
     }
-  }, [newChat])
+  }, [newChat, onNavigateTo, target])
 
   const handleSelectChat = useCallback(
-    async (
-      chatId: string,
-      index: number,
-      e: React.MouseEvent<HTMLDivElement>
-    ) => {
+    (chatId: string, index: number, e: React.MouseEvent<HTMLDivElement>) => {
       if (!isBranchScope(target)) {
         throw new Error('Cannot navigate to chat from non-branch scope')
       }
 
+      let next: string[] = []
       if (e.shiftKey && lastSelectedIndex !== null) {
         const start = Math.min(lastSelectedIndex, index)
         const end = Math.max(lastSelectedIndex, index)
         const ids = filtered.slice(start, end + 1).map((c) => c.id)
-        setSelectedIds((prev) => Array.from(new Set([...prev, ...ids])))
+        next = Array.from(new Set([...selectedIds, ...ids]))
       } else if (e.ctrlKey || e.metaKey) {
-        setSelectedIds((prev) =>
-          prev.includes(chatId)
-            ? prev.filter((id) => id !== chatId)
-            : [...prev, chatId]
-        )
+        next = selectedIds.includes(chatId)
+          ? selectedIds.filter((id) => id !== chatId)
+          : [...selectedIds, chatId]
         setLastSelectedIndex(index)
       } else {
-        setSelectedIds([chatId])
+        next = [chatId]
         setCurrentChatId(chatId)
         setLastSelectedIndex(index)
-        const scope: FileScope = { ...target, path: `chats/${chatId}` }
-        onSelection?.(scope)
+      }
+
+      setSelectedIds(next)
+
+      if (next.length === 0) {
+        onSelection?.()
+      } else {
+        const scopes = next.map<FileScope>((id) => ({
+          ...target,
+          path: `chats/${id}`
+        }))
+        onSelection?.(scopes[0], scopes.slice(1))
       }
     },
-    [filtered, lastSelectedIndex, onSelection, target]
+    [filtered, lastSelectedIndex, onSelection, selectedIds, target]
   )
 
   const handleDeleteChat = useCallback(
@@ -111,8 +131,19 @@ const ChatsView = () => {
   }, [])
 
   const handleSelectAll = useCallback(() => {
-    setSelectedIds(filtered.map((c) => c.id))
-  }, [filtered])
+    const ids = filtered.map((c) => c.id)
+    setSelectedIds(ids)
+    if (!isBranchScope(target)) return
+    if (ids.length === 0) {
+      onSelection?.()
+    } else {
+      const scopes = ids.map<FileScope>((id) => ({
+        ...target,
+        path: `chats/${id}`
+      }))
+      onSelection?.(scopes[0], scopes.slice(1))
+    }
+  }, [filtered, onSelection, target])
 
   if (loading) return <p>Loading...</p>
 
