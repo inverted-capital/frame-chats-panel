@@ -11,7 +11,9 @@ const useChatSaver = () => {
     }
 
     const fns = artifact.fibers.actions.bind(schema)
-    const { chatId } = await fns.newChat({ config: { model: 'gpt-4o' } })
+    const { chatId } = await fns.newChat({
+      config: { model: 'gpt-4o', provider: 'openai' }
+    })
     return chatId
   }, [artifact])
 
