@@ -1,6 +1,7 @@
 import { useDir, useJson, useStore } from '@artifact/client/hooks'
 import { useMemo } from 'react'
 import { configSchema } from '@dreamcatcher/chats/schema'
+import type { UIMessage } from 'ai'
 
 export const useChats = () => {
   const dir = useDir('chats/') || []
