@@ -17,10 +17,15 @@ export const useChats = () => {
     const { readFile, readDir } = store.getState()
     return chatIds.map((chatId) => {
       const path = 'chats/' + chatId + '/'
-      const config = readFile(path + 'config.json', parseConfig)
+      const config = readFile(path + 'config.json', parseConfig) as ReturnType<
+        typeof parseConfig
+      >
       const messagesDir = readDir(path + 'messages/') || []
       const messages = messagesDir.map((file) => {
-        const message = readFile(path + 'messages/' + file.path, parseConfig)
+        const message = readFile(
+          path + 'messages/' + file.path,
+          parseMessage
+        ) as UIMessage
         return message
       })
       return {
@@ -50,5 +55,29 @@ export const useMessage = (chatId: string, messageId: string) => {
   return json
 }
 
-const parseConfig = (b: Uint8Array) =>
-  configSchema.parse(JSON.parse(new TextDecoder().decode(b)))
+const parseConfig = (b: Uint8Array) => {
+  try {
+    return configSchema.parse(JSON.parse(new TextDecoder().decode(b)))
+  } catch {
+    return { model: 'gpt-4o', provider: 'openai' }
+  }
+}
+
+const parseMessage = (b: Uint8Array): UIMessage => {
+  try {
+    const obj = JSON.parse(new TextDecoder().decode(b))
+    if (
+      obj &&
+      typeof obj.id === 'string' &&
+      (obj.role === 'system' ||
+        obj.role === 'user' ||
+        obj.role === 'assistant') &&
+      Array.isArray(obj.parts)
+    ) {
+      return obj as UIMessage
+    }
+  } catch {
+    // ignore
+  }
+  return { id: '', role: 'system', parts: [] }
+}
